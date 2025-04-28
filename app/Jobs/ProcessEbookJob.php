@@ -47,25 +47,34 @@ class ProcessEbookJob implements ShouldQueue
         $this->book->update(['processing_status' => ProcessingStatusEnum::DONE]);
     }
 
-    private function splitTextIntoshards($text, $maxLength = 1800)
+    private function splitTextIntoShards($text, $targetLength = 500)
     {
         $sentences = preg_split('/(?<=[.?!])\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-        $chunks = [];
-        $chunk = '';
+        $shards = [];
+        $currentShard = '';
 
         foreach ($sentences as $sentence) {
-            if (strlen($chunk) + strlen($sentence) <= $maxLength) {
-                $chunk .= ' ' . $sentence;
+            $sentence = trim($sentence);
+
+            // Skip empty sentences
+            if (empty($sentence)) {
+                continue;
+            }
+
+            // If adding this sentence would make the shard too big
+            if (strlen($currentShard . ' ' . $sentence) > $targetLength && !empty($currentShard)) {
+                $shards[] = trim($currentShard);
+                $currentShard = $sentence;
             } else {
-                $chunks[] = trim($chunk);
-                $chunk = $sentence;
+                $currentShard .= ' ' . $sentence;
             }
         }
 
-        if (!empty($chunk)) {
-            $chunks[] = trim($chunk);
+        // Add last shard if anything remains
+        if (!empty($currentShard)) {
+            $shards[] = trim($currentShard);
         }
 
-        return $chunks;
+        return $shards;
     }
 }
