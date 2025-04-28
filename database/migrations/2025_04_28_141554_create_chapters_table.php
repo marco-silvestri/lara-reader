@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\BookProcessingStatusEnum;
+use App\Enums\ProcessingStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -18,8 +18,8 @@ return new class extends Migration
             $table->text('title');
             $table->longText('content');
             $table->string('audio_path');
-            $table->enum('status',
-                array_column(BookProcessingStatusEnum::cases(), 'value'));
+            $table->enum('processing_status',
+                array_column(ProcessingStatusEnum::cases(), 'value'));
             $table->timestamps();
         });
     }

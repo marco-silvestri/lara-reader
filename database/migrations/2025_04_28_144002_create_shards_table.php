@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
 use App\Enums\ProcessingStatusEnum;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
@@ -12,11 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('books', function (Blueprint $table) {
+        Schema::create('shards', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->string('author');
-            $table->string('path');
+            $table->foreignId('chapter_id')->constrained();
+            $table->mediumText('content');
             $table->enum('processing_status',
                 array_column(ProcessingStatusEnum::cases(), 'value'));
             $table->timestamps();
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('books');
+        Schema::dropIfExists('fragments');
     }
 };

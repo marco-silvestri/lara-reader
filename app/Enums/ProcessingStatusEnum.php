@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum BookProcessingStatusEnum: string
+enum ProcessingStatusEnum: string
 {
     case PENDING = 'pending';
     case PROCESSING = 'processing';

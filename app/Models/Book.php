@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Models;
+use Smalot\Epub\Epub;
 
-use App\Enums\BookProcessingStatusEnum;
+use App\Enums\ProcessingStatusEnum;
 use App\Models\Chapter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,7 +15,7 @@ class Book extends Model
     public function casts()
     {
         return [
-            'processing_status' => BookProcessingStatusEnum::class,
+            'processing_status' => ProcessingStatusEnum::class,
         ];
     }
 
