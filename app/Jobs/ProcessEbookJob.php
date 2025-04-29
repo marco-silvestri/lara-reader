@@ -47,32 +47,43 @@ class ProcessEbookJob implements ShouldQueue
         $this->book->update(['processing_status' => ProcessingStatusEnum::DONE]);
     }
 
-    private function splitTextIntoShards($text, $targetLength = 500)
+    private function splitTextIntoShards(string $text, int $target = 500, int $min = 400, int $max = 700): array
     {
         $sentences = preg_split('/(?<=[.?!])\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
         $shards = [];
-        $currentShard = '';
+        $buffer = '';
 
         foreach ($sentences as $sentence) {
             $sentence = trim($sentence);
+            if ($sentence === '') continue;
 
-            // Skip empty sentences
-            if (empty($sentence)) {
-                continue;
-            }
+            $prospective = $buffer === '' ? $sentence : $buffer . ' ' . $sentence;
+            $length = strlen($prospective);
 
-            // If adding this sentence would make the shard too big
-            if (strlen($currentShard . ' ' . $sentence) > $targetLength && !empty($currentShard)) {
-                $shards[] = trim($currentShard);
-                $currentShard = $sentence;
+            if ($length < $min) {
+                // Keep building the buffer
+                $buffer = $prospective;
+            } elseif ($length <= $max) {
+                // Acceptable size — store and reset
+                $buffer = $prospective;
+                $shards[] = trim($buffer);
+                $buffer = '';
             } else {
-                $currentShard .= ' ' . $sentence;
+                // Too long if we add, so flush current buffer and start new one
+                if (!empty($buffer)) {
+                    $shards[] = trim($buffer);
+                    $buffer = $sentence;
+                } else {
+                    // Single sentence too long — force break (edge case)
+                    $shards[] = trim($sentence);
+                    $buffer = '';
+                }
             }
         }
 
-        // Add last shard if anything remains
-        if (!empty($currentShard)) {
-            $shards[] = trim($currentShard);
+        // Add leftover
+        if (!empty($buffer)) {
+            $shards[] = trim($buffer);
         }
 
         return $shards;
