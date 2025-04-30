@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\ProcessShardTTSJob;
+use App\Enums\ProcessingStatusEnum;
 use App\Models\Book;
+use App\Models\Shard;
 use Illuminate\Console\Command;
+use App\Jobs\ProcessShardTTSJob;
 
 class SendBookShardsToTTS extends Command
 {
@@ -28,15 +30,18 @@ class SendBookShardsToTTS extends Command
     public function handle()
     {
         $book = Book::find(1);
-
-        foreach ($book->chapters as $chapter)
-        {
-            foreach($chapter->shards as $shard)
-            {
-                $x = new ProcessShardTTSJob($shard);
-                $x->handle();
-                sleep(1);
-            }
+        $shards = Shard::where('processing_status', ProcessingStatusEnum::PENDING)
+        ->whereIn('chapter_id',
+            $book->chapters->pluck('id')->values()->flatten()->toArray()
+        )->get();
+        $bar = $this->output->createProgressBar(count($shards));
+        $bar->start();
+        foreach ($shards as $shard) {
+            $x = new ProcessShardTTSJob($shard);
+            $x->handle();
+            $bar->advance();
         }
+
+        $bar->finish();
     }
 }

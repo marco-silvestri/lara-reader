@@ -2,10 +2,12 @@
 
 namespace App\Jobs;
 
-use App\Enums\ProcessingStatusEnum;
 use App\Models\Book;
+use NumberFormatter;
 use App\Models\Shard;
 use App\Models\Chapter;
+use Illuminate\Support\Str;
+use App\Enums\ProcessingStatusEnum;
 use App\Services\EpubParserService;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,8 +25,6 @@ class ProcessEbookJob implements ShouldQueue
     {
         $parsedBook = new EpubParserService(storage_path('app/' . $this->book->path));
         foreach ($parsedBook->getChapters() as $chapterData) {
-
-            dump($chapterData);
             $chapter = Chapter::create([
                 'book_id' => $this->book->id,
                 'title' => $chapterData['title'],
@@ -39,6 +39,7 @@ class ProcessEbookJob implements ShouldQueue
                 Shard::create([
                     'chapter_id' => $chapter->id,
                     'content' => $shardText,
+                    'normalized_content' => $this->sanitizeText($shardText),
                     'processing_status' => ProcessingStatusEnum::PENDING,
                 ]);
             }
@@ -87,5 +88,31 @@ class ProcessEbookJob implements ShouldQueue
         }
 
         return $shards;
+    }
+
+    protected function sanitizeText(string $text): string
+    {
+        $text = preg_replace_callback('/([^\.\!\?\n])\s+$/m', function ($matches) {
+            return $matches[1] . '. ';
+        }, $text);
+
+        $text = preg_replace('/\s+/', ' ', $text);
+
+        $text = trim($text);
+
+        //$text = Str::replace(['“', '”', '‘', '’'], '"', $text);
+        $text = Str::replace(['–', '—'], '-', $text);
+
+        $text = Str::lower($text);
+        $text = $this->normalizeNumbers($text);
+        return $text;
+    }
+
+    protected function normalizeNumbers(string $text): string
+    {
+        return preg_replace_callback('/\b\d{1,6}\b/', function ($matches) {
+            $formatter = new NumberFormatter('en', NumberFormatter::SPELLOUT);
+            return $formatter->format($matches[0]);
+        }, $text);
     }
 }
