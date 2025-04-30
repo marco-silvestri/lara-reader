@@ -16,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('chapter_id')->constrained();
             $table->mediumText('content');
+            $table->mediumText('normalized_content');
             $table->enum('processing_status',
                 array_column(ProcessingStatusEnum::cases(), 'value'));
             $table->timestamps();

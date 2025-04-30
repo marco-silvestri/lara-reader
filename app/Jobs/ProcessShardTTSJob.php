@@ -35,7 +35,7 @@ class ProcessShardTTSJob implements ShouldQueue
                 'Accept' => 'audio/mpeg',
             ])->post('host.docker.internal:8880/v1/audio/speech',[//config('services.kokoro.endpoint'), [
                 'model' => 'kokoro',
-                'input' => $this->shard->content,
+                'input' => $this->shard->normalized_content,
                 'voice' => 'af_aoede',
                 'response_format' => 'mp3',
                 'download_format' => 'mp3',
@@ -58,7 +58,7 @@ class ProcessShardTTSJob implements ShouldQueue
             }
 
             // Save binary audio/mpeg stream to disk
-            $filePath = 'tts_shards/' . $this->shard->chapter->book->id .'_'. $this->shard->chapter->id .'_'. $this->shard->id . '.mp3';
+            $filePath = 'tts_shards/' . $this->shard->chapter->book->id .'/'. $this->shard->chapter->id .'_'. $this->shard->id . '.mp3';
             Storage::disk('public')->put($filePath, $response->body());
 
             $this->shard->update([
@@ -67,7 +67,7 @@ class ProcessShardTTSJob implements ShouldQueue
             ]);
 
         } catch (\Throwable $e) {
-            dd($e->getMessage());
+            dump($e->getMessage());
             $this->shard->update([
                 'processing_status' => ProcessingStatusEnum::ERROR,
                 //'error_message' => $e->getMessage(),
